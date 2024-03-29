@@ -253,11 +253,13 @@ public struct AlertToast: View{
                     
                     Text(LocalizedStringKey(title ?? ""))
                         .font(style?.titleFont ?? Font.headline.bold())
+                        .lineLimit(nil)
                 }
                 
                 if subTitle != nil{
                     Text(LocalizedStringKey(subTitle!))
                         .font(style?.subTitleFont ?? Font.subheadline)
+                        .lineLimit(nil)
                 }
             }
             .multilineTextAlignment(.leading)
@@ -302,6 +304,7 @@ public struct AlertToast: View{
                         if title != nil{
                             Text(LocalizedStringKey(title ?? ""))
                                 .font(style?.titleFont ?? Font.body.bold())
+                                .lineLimit(nil)
                                 .multilineTextAlignment(.center)
                                 .textColor(style?.titleColor ?? nil)
                         }
@@ -309,6 +312,7 @@ public struct AlertToast: View{
                             Text(LocalizedStringKey(subTitle ?? ""))
                                 .font(style?.subTitleFont ?? Font.footnote)
                                 .opacity(0.7)
+                                .lineLimit(nil)
                                 .multilineTextAlignment(.center)
                                 .textColor(style?.subtitleColor ?? nil)
                         }
@@ -406,10 +410,10 @@ public struct AlertToastModifier: ViewModifier{
     @Binding var isPresenting: Bool
     
     ///Duration time to display the alert
-    @State var duration: Double = 2
+    var duration: Double = 2
     
     ///Tap to dismiss alert
-    @State var tapToDismiss: Bool = true
+    var tapToDismiss: Bool = true
     
     var offsetY: CGFloat = 0
     
@@ -520,11 +524,11 @@ public struct AlertToastModifier: ViewModifier{
                 }
                             .animation(Animation.spring(), value: isPresenting)
                 )
-                .valueChanged(value: isPresenting, onChange: { (presented) in
-                    if presented{
+                .onAppear {
+                    if !tapToDismiss {
                         onAppearAction()
                     }
-                })
+                }
         case .hud:
             content
                 .overlay(
@@ -561,11 +565,11 @@ public struct AlertToastModifier: ViewModifier{
                             .frame(maxWidth: screen.width, maxHeight: screen.height, alignment: .center)
                             .edgesIgnoringSafeArea(.all)
                             .animation(Animation.spring(), value: isPresenting))
-                .valueChanged(value: isPresenting, onChange: { (presented) in
-                    if presented{
+                .onAppear {
+                    if !tapToDismiss {
                         onAppearAction()
                     }
-                })
+                }
         }
         
     }
@@ -574,12 +578,7 @@ public struct AlertToastModifier: ViewModifier{
         guard workItem == nil else {
             return
         }
-        
-        if alert().type == .loading{
-            duration = 0
-            tapToDismiss = false
-        }
-        
+
         if duration > 0{
             workItem?.cancel()
             
@@ -679,7 +678,7 @@ public extension View{
     ///   - alert: () -> AlertToast
     /// - Returns: `AlertToast`
     func toast(isPresenting: Binding<Bool>, duration: Double = 2, tapToDismiss: Bool = true, offsetY: CGFloat = 0, alert: @escaping () -> AlertToast, onTap: (() -> ())? = nil, completion: (() -> ())? = nil) -> some View{
-        modifier(AlertToastModifier(isPresenting: isPresenting, duration: duration, tapToDismiss: tapToDismiss, offsetY: offsetY, alert: alert, onTap: onTap, completion: completion))
+        modifier(AlertToastModifier(isPresenting: isPresenting, duration: alert().type != .loading ? duration : 0, tapToDismiss: alert().type != .loading ? tapToDismiss : false, offsetY: offsetY, alert: alert, onTap: onTap, completion: completion))
     }
     
     /// Choose the alert background
